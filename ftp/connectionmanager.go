@@ -10,16 +10,16 @@ import (
 )
 
 type ConnectionManager struct {
-	baseFs *FS
-	acc    *accountManager
+	fs  *FS
+	acc *accountManager
 
 	ctlConnection net.Conn
 
 	dataConnection net.Conn
 }
 
-func NewConnectionManager(fs *FS) *ConnectionManager {
-	return &ConnectionManager{baseFs: fs, acc: newAccountManager()}
+func NewConnectionManager(baseDir string) *ConnectionManager {
+	return &ConnectionManager{acc: newAccountManager(), fs: NewFS(baseDir)}
 }
 
 func (connManager *ConnectionManager) Handle(conn net.Conn) {
@@ -75,7 +75,7 @@ func (connManager *ConnectionManager) user(cmdData []byte) bool {
 		connManager.acc.withUser(user)
 
 		// override the base virtual space with user specific virtual space
-		connManager.baseFs = connManager.baseFs.ForUser(user)
+		connManager.fs = connManager.fs.ForUser(user)
 		logMsg(user)
 
 		response := "331 Need pass\n"
@@ -122,7 +122,7 @@ func (connManager *ConnectionManager) syst(cmdData []byte) bool {
 
 func (connManager *ConnectionManager) pwd(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "PWD") {
-		response := fmt.Sprintf("257 %v\n", "\"/Users/anicolaspp\"")
+		response := fmt.Sprintf("257 %v\n", connManager.fs.currentDirectory)
 
 		connManager.sendStr(response)
 
@@ -137,7 +137,7 @@ func (connManager *ConnectionManager) list(cmdData []byte) bool {
 
 		connManager.sendStr("150 Listing Directory Content\n")
 
-		content := connManager.baseFs.ls()
+		content := connManager.fs.ls()
 
 		strResponse := strings.Join(content, "\n") + "\n"
 

@@ -17,13 +17,13 @@ func main() {
 
 	defer listen.Close()
 
-	baseFs := ftp.NewFS("/Users/nperez/ftp")
+	baseDir := "/Users/nperez/ftp"
 
 	for {
 		conn, err := listen.Accept()
 		checkError(err)
 
-		go ftp.NewConnectionManager(baseFs).Handle(conn)
+		go ftp.NewConnectionManager(baseDir).Handle(conn)
 	}
 }
 

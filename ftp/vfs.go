@@ -6,16 +6,30 @@ import (
 )
 
 type FS struct {
+	baseDir string
 	currentDirectory string
 }
 
 func NewFS(basePath string) *FS {
-	return &FS{currentDirectory: basePath}
+	return &FS{baseDir: basePath, currentDirectory: basePath}
 }
 
 //ForUser returns virtual file system for specific user
 func (fs *FS) ForUser(user string) *FS {
-	return &FS{currentDirectory: fs.currentDirectory + "/" + user + "/"}
+
+	userDir := fs.baseDir + "/" + user
+
+	_, err := os.Stat(userDir)
+
+	if os.IsNotExist(err) {
+		_, err = os.Create(userDir)
+
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return &FS{currentDirectory: userDir, baseDir: fs.baseDir}
 }
 
 func (fs *FS) Pwd() string {
