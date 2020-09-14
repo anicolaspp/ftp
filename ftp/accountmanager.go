@@ -17,13 +17,13 @@ func newAccountManager() *accountManager {
 
 func (acc *accountManager) withUser(user string) {
 	acc.user = user
-	logMsg(fmt.Sprintf("ACC MANAGER SET USER %v\n", user))
+	logMsg(fmt.Sprintf("[SERVER]: ACC MANAGER SET USER %v\n", user))
 }
 
 func (acc *accountManager) withPass(pass string) {
 	acc.pass = pass
 
-	logMsg(fmt.Sprintf("ACC MANAGER SET PASS %v\n", "******"))
+	logMsg(fmt.Sprintf("[SERVER]: ACC MANAGER SET PASS %v\n", "******"))
 }
 
 func (acc *accountManager) validatePassword(pass string) bool {
@@ -33,7 +33,7 @@ func (acc *accountManager) validatePassword(pass string) bool {
 		return true
 	}
 
-	logMsg("PASS CMD user:password validation error\n")
+	logMsg("[SERVER]: PASS CMD user:password validation error\n")
 
 	return false
 }

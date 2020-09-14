@@ -27,9 +27,11 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 
 	defer connManager.ctlConnection.Close()
 
-	conn.Write([]byte("220 Welcome to Nico FTP Server\n"))
+	connManager.ctlConnection.Write([]byte("220 Welcome to Nico FTP Server\n"))
 
+	// start connection control loop
 	var buf [512]byte
+
 	for {
 		// read upto 512 bytes
 		n, err := conn.Read(buf[0:])
@@ -41,29 +43,32 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 
 		cmd := string(buf[0:n])
 
-		msg := fmt.Sprintf("[CLIENT CMD]: %v\n", cmd)
-		logMsg(msg)
+		logMsg(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
 
 		connManager.processCommand(buf[0:n])
 	}
 }
 
 func (connManager *ConnectionManager) processCommand(cmdData []byte) {
-	if !connManager.userCommand(cmdData) &&
-		!connManager.passCommand(cmdData) &&
-		!connManager.pwdCommand(cmdData) &&
-		!connManager.systCommand(cmdData) &&
-		!connManager.portCommand(cmdData) &&
-		!connManager.typeCommand(cmdData) &&
+	if !connManager.user(cmdData) &&
+		!connManager.pass(cmdData) &&
+		!connManager.pwd(cmdData) &&
+		!connManager.syst(cmdData) &&
+		!connManager.lprt(cmdData) &&
+		!connManager.typ(cmdData) &&
 		!connManager.eprt(cmdData) &&
 		!connManager.list(cmdData) {
 
-		connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
+		connManager.echo(cmdData)
 	}
 
 }
 
-func (connManager *ConnectionManager) userCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) echo(cmdData []byte) {
+	connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
+}
+
+func (connManager *ConnectionManager) user(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "USER") {
 		user := strings.TrimSpace(cmd[5:])
 
@@ -82,7 +87,7 @@ func (connManager *ConnectionManager) userCommand(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) passCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) pass(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "PASS") {
 		pass := strings.TrimSpace(cmd[4:])
 		if connManager.acc.validatePassword(pass) {
@@ -101,7 +106,7 @@ func (connManager *ConnectionManager) passCommand(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) systCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) syst(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "SYST") {
 		sysName := runtime.GOOS
 
@@ -115,7 +120,7 @@ func (connManager *ConnectionManager) systCommand(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) pwdCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) pwd(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "PWD") {
 		response := fmt.Sprintf("257 %v\n", "\"/Users/anicolaspp\"")
 
@@ -160,7 +165,7 @@ func (connManager *ConnectionManager) eprt(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) portCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) lprt(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "LPRT") {
 
 		args := strings.Split(strings.Trim(cmd[5:], "\r\n"), ",")
@@ -214,7 +219,7 @@ func (connManager *ConnectionManager) portCommand(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) typeCommand(cmdData []byte) bool {
+func (connManager *ConnectionManager) typ(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "TYPE") {
 		response := "200\n"
 
@@ -224,10 +229,6 @@ func (connManager *ConnectionManager) typeCommand(cmdData []byte) bool {
 	}
 
 	return false
-}
-
-func logMsg(value interface{}) {
-	fmt.Print(value)
 }
 
 func (connManager *ConnectionManager) sendStr(msg string) {
@@ -241,7 +242,7 @@ func (connManager *ConnectionManager) openDataConnection(ip net.IP, port int64) 
 
 	address := fmt.Sprintf("%v:%v", "localhost", port)
 
-	fmt.Printf("Connecting to %v\n", address)
+	logMsg(fmt.Sprintf("[SERVER]: Connecting to %v\n", address))
 
 	dataConn, error := net.Dial("tcp", address)
 
@@ -250,9 +251,13 @@ func (connManager *ConnectionManager) openDataConnection(ip net.IP, port int64) 
 		return false
 	}
 
-	fmt.Printf("Data connection opened at %v\n", address)
+	logMsg(fmt.Sprintf("Data connection opened at %v\n", address))
 
 	connManager.dataConnection = dataConn
 
 	return true
+}
+
+func logMsg(value interface{}) {
+	fmt.Print(value)
 }

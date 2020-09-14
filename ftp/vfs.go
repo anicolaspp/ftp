@@ -16,3 +16,8 @@ func (fs *FS) ForUser(user string) *FS {
 func (fs *FS) Pwd() string {
 	return fs.currentDirectory
 }
+
+func (fs *FS) ls() []string {
+
+	return nil
+}
