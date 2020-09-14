@@ -16,3 +16,13 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+.idea/codeStyles/Project.xml
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/sbt.xml
+.idea/vcs.xml
+ftp.iml
+.idea/codeStyles/codeStyleConfig.xml
