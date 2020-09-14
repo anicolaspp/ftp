@@ -137,7 +137,11 @@ func (connManager *ConnectionManager) list(cmdData []byte) bool {
 
 		connManager.sendStr("150 Listing Directory Content\n")
 
-		connManager.dataConnection.Write([]byte("my_dir\n"))
+		content := connManager.baseFs.ls()
+
+		strResponse := strings.Join(content, "\n") + "\n"
+
+		connManager.dataConnection.Write([]byte(strResponse))
 		connManager.dataConnection.Close()
 
 		connManager.sendStr("226 Directory send OK\r\n")

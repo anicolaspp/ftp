@@ -17,7 +17,7 @@ func main() {
 
 	defer listen.Close()
 
-	baseFs := ftp.NewFS("/Users/anicolaspp")
+	baseFs := ftp.NewFS("/Users/nperez/ftp")
 
 	for {
 		conn, err := listen.Accept()
