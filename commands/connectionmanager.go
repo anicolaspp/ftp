@@ -34,7 +34,7 @@ func (connManager ConnectionManager) Handle(conn net.Conn) {
 
 		cmd := string(buf[0:n])
 
-		fmt.Println(cmd)
+		fmt.Println("Received CMD " + cmd)
 
 		go connManager.processCommand(buf[0:n], cmds)
 
@@ -50,7 +50,8 @@ func (connManager ConnectionManager) processCommand(cmdData []byte, output chan 
 	if !connManager.userCommand(cmdData, output) &&
 		!connManager.passCommand(cmdData, output) &&
 		!connManager.pwdCommand(cmdData, output) &&
-		!connManager.systCommand(cmdData, output) {
+		!connManager.systCommand(cmdData, output) &&
+		!connManager.portCommand(cmdData, output) {
 
 		output <- cmdData
 	}
@@ -122,6 +123,18 @@ func (connManager ConnectionManager) pwdCommand(cmdData []byte, output chan []by
 		logMsg(response)
 
 		sendStr(response, output)
+
+		return true
+	}
+
+	return false
+}
+
+func (connManager ConnectionManager) portCommand(cmdData []byte, output chan []byte) bool {
+	if cmd := string(cmdData); strings.HasPrefix(cmd, "PORT") {
+		logMsg(cmd)
+
+		sendStr(cmd, output)
 
 		return true
 	}
