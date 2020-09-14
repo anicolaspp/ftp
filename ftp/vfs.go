@@ -1,4 +1,4 @@
-package commands
+package ftp
 
 type FS struct {
 	currentDirectory string

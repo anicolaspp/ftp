@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/anicolaspp/ftp/commands"
+	"github.com/anicolaspp/ftp/ftp"
 	"net"
 	"os"
 )
@@ -17,13 +17,13 @@ func main() {
 
 	defer listen.Close()
 
-	baseFs := commands.NewFS("/Users/anicolaspp")
+	baseFs := ftp.NewFS("/Users/anicolaspp")
 
 	for {
 		conn, err := listen.Accept()
 		checkError(err)
 
-		go commands.NewConnectionManager(baseFs).Handle(conn)
+		go ftp.NewConnectionManager(baseFs).Handle(conn)
 	}
 }
 
