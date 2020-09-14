@@ -13,13 +13,17 @@ func main() {
 
 	checkError(err)
 
+	fmt.Println("Server running at port 21...")
+
 	defer listen.Close()
+
+	baseFs := commands.NewFS("/Users/anicolaspp")
 
 	for {
 		conn, err := listen.Accept()
 		checkError(err)
 
-		commands.NewConnectionManager(commands.NewFS("/Users/anicolaspp")).Handle(conn)
+		go commands.NewConnectionManager(baseFs).Handle(conn)
 	}
 }
 
