@@ -121,7 +121,7 @@ func (fs *FS) Cwd(path string) (string, error) {
 	fileInfo, err := fd.Stat()
 
 	if err != nil {
-		return fs.Pwd(), PathError{path: path, cause: fmt.Sprintf("Error getting path information: %v", err)}
+		return fs.Pwd(), PathError{path: path, cause: fmt.Sprintf("Error getting information from path: %v", virtualPath(realPath, fs))}
 	}
 
 	if !fileInfo.IsDir() {
