@@ -50,15 +50,19 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 }
 
 func (connManager *ConnectionManager) processCommand(cmdData []byte) {
-	if !connManager.user(cmdData) &&
-		!connManager.pass(cmdData) &&
-		!connManager.pwd(cmdData) &&
-		!connManager.syst(cmdData) &&
-		!connManager.lprt(cmdData) &&
-		!connManager.typ(cmdData) &&
-		!connManager.eprt(cmdData) &&
-		!connManager.list(cmdData) &&
-		!connManager.cwd(cmdData) {
+	cmd := ParseCommand(cmdData)
+
+	fmt.Println(cmd)
+
+	if !connManager.user(cmd) &&
+		!connManager.pass(cmd) &&
+		!connManager.pwd(cmd) &&
+		!connManager.syst(cmd) &&
+		!connManager.lprt(cmd) &&
+		!connManager.typ(cmd) &&
+		!connManager.eprt(cmd) &&
+		!connManager.list(cmd) &&
+		!connManager.cwd(cmd) {
 
 		connManager.echo(cmdData)
 	}
@@ -69,9 +73,10 @@ func (connManager *ConnectionManager) echo(cmdData []byte) {
 	connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
 }
 
-func (connManager *ConnectionManager) user(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "USER") {
-		user := strings.TrimSpace(cmd[5:])
+func (connManager *ConnectionManager) user(cmd Command) bool {
+
+	if cmd.cmdType == USER {
+		user := cmd.Args
 
 		connManager.acc.withUser(user)
 
@@ -88,9 +93,10 @@ func (connManager *ConnectionManager) user(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) pass(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "PASS") {
-		pass := strings.TrimSpace(cmd[4:])
+func (connManager *ConnectionManager) pass(cmd Command) bool {
+	if cmd.cmdType == PASS {
+		pass := cmd.Args
+
 		if connManager.acc.validatePassword(pass) {
 			response := "230 User logged in, proceed.\n"
 
@@ -107,8 +113,8 @@ func (connManager *ConnectionManager) pass(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) syst(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "SYST") {
+func (connManager *ConnectionManager) syst(cmd Command) bool {
+	if cmd.cmdType == SYST {
 		sysName := runtime.GOOS
 
 		response := fmt.Sprintf("215 TYPE: %v\n", sysName)
@@ -121,8 +127,8 @@ func (connManager *ConnectionManager) syst(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) pwd(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "PWD") {
+func (connManager *ConnectionManager) pwd(cmd Command) bool {
+	if cmd.cmdType == PWD {
 		response := fmt.Sprintf("257 %v\n", connManager.fs.Pwd())
 
 		connManager.sendStr(response)
@@ -133,9 +139,9 @@ func (connManager *ConnectionManager) pwd(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) cwd(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "CWD") {
-		path := strings.TrimSpace(cmd[4:])
+func (connManager *ConnectionManager) cwd(cmd Command) bool {
+	if cmd.cmdType == CWD {
+		path := cmd.Args
 
 		currentPath, err := connManager.fs.Cwd(path)
 
@@ -155,8 +161,8 @@ func (connManager *ConnectionManager) cwd(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) list(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "LIST") {
+func (connManager *ConnectionManager) list(cmd Command) bool {
+	if cmd.cmdType == LIST {
 
 		connManager.sendStr("150 Listing Directory Content\n")
 
@@ -175,9 +181,9 @@ func (connManager *ConnectionManager) list(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) eprt(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "EPRT") {
-		args := strings.Split(strings.Trim(cmd[5:], "\r\n"), "|")
+func (connManager *ConnectionManager) eprt(cmd Command) bool {
+	if cmd.cmdType == EPRT {
+		args := strings.Split(strings.Trim(cmd.Args, "\r\n"), "|")
 
 		port, _ := strconv.Atoi(args[3])
 
@@ -192,10 +198,10 @@ func (connManager *ConnectionManager) eprt(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) lprt(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "LPRT") {
+func (connManager *ConnectionManager) lprt(cmd Command) bool {
+	if cmd.cmdType == LPRT {
 
-		args := strings.Split(strings.Trim(cmd[5:], "\r\n"), ",")
+		args := strings.Split(strings.Trim(cmd.Args, "\r\n"), ",")
 
 		addSize, _ := strconv.Atoi(args[1])
 
@@ -246,8 +252,8 @@ func (connManager *ConnectionManager) lprt(cmdData []byte) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) typ(cmdData []byte) bool {
-	if cmd := string(cmdData); strings.HasPrefix(cmd, "TYPE") {
+func (connManager *ConnectionManager) typ(cmd Command) bool {
+	if cmd.cmdType == TYPE {
 		response := "200\n"
 
 		connManager.sendStr(response)
