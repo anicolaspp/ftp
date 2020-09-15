@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 )
 
+//FS is a virtual file system
 type FS struct {
 	baseDir          string
 	currentDirectory string
@@ -63,6 +64,8 @@ func (fs *FS) Ls() []string {
 }
 
 //Cwd navigates to the given path. The resulting path must be a subtree of the user virtual space.
+// Notice that navigation can only target directories. If the resulting path is a file, an PathError is returned and
+// the current directory is unchanged and returned along the error.
 func (fs *FS) Cwd(path string) (string, error) {
 	newPath := fs.currentDirectory + "/" + path
 
@@ -77,7 +80,7 @@ func (fs *FS) Cwd(path string) (string, error) {
 	realPath, _ := filepath.Abs(newPath)
 
 	if !strings.HasPrefix(realPath, fs.baseDir) {
-		return fs.currentDirectory, PathError{path: path, cause: "Trying to leave user base directory"}
+		return fs.Pwd(), PathError{path: path, cause: fmt.Sprintf("Trying to leave user base directory: %v", fs.baseDir)}
 	}
 
 	fileInfo, err := fd.Stat()
