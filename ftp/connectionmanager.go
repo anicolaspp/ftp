@@ -57,7 +57,8 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) {
 		!connManager.lprt(cmdData) &&
 		!connManager.typ(cmdData) &&
 		!connManager.eprt(cmdData) &&
-		!connManager.list(cmdData) {
+		!connManager.list(cmdData) &&
+		!connManager.cwd(cmdData) {
 
 		connManager.echo(cmdData)
 	}
@@ -122,9 +123,31 @@ func (connManager *ConnectionManager) syst(cmdData []byte) bool {
 
 func (connManager *ConnectionManager) pwd(cmdData []byte) bool {
 	if cmd := string(cmdData); strings.HasPrefix(cmd, "PWD") {
-		response := fmt.Sprintf("257 %v\n", connManager.fs.currentDirectory)
+		response := fmt.Sprintf("257 %v\n", connManager.fs.Pwd())
 
 		connManager.sendStr(response)
+
+		return true
+	}
+
+	return false
+}
+
+func (connManager *ConnectionManager) cwd(cmdData []byte) bool {
+	if cmd := string(cmdData); strings.HasPrefix(cmd, "CWD") {
+		path := strings.TrimSpace(cmd[4:])
+
+		currentPath, err := connManager.fs.Cwd(path)
+
+		if err != nil {
+			errorResponse := fmt.Sprintf("550 %v\n", err)
+
+			connManager.sendStr(errorResponse)
+		} else {
+			response := fmt.Sprintf("250 OK. Change path to %v\n", currentPath)
+
+			connManager.sendStr(response)
+		}
 
 		return true
 	}
@@ -137,7 +160,7 @@ func (connManager *ConnectionManager) list(cmdData []byte) bool {
 
 		connManager.sendStr("150 Listing Directory Content\n")
 
-		content := connManager.fs.ls()
+		content := connManager.fs.Ls()
 
 		strResponse := strings.Join(content, "\n") + "\n"
 

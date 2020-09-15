@@ -3,10 +3,12 @@ package ftp
 import (
 	"fmt"
 	"os"
+	"strings"
+	"path/filepath"
 )
 
 type FS struct {
-	baseDir string
+	baseDir          string
 	currentDirectory string
 }
 
@@ -33,10 +35,10 @@ func (fs *FS) ForUser(user string) *FS {
 }
 
 func (fs *FS) Pwd() string {
-	return fs.currentDirectory
+	return virtualPath(fs.currentDirectory, fs)
 }
 
-func (fs *FS) ls() []string {
+func (fs *FS) Ls() []string {
 
 	fd, err := os.Open(fs.currentDirectory)
 
@@ -60,6 +62,39 @@ func (fs *FS) ls() []string {
 	return result
 }
 
+//Cwd navigates to the given path. The resulting path must be a subtree of the user virtual space.
+func (fs *FS) Cwd(path string) (string, error) {
+	newPath := fs.currentDirectory + "/" + path
+
+	fd, err := os.Open(newPath)
+
+	if err != nil {
+		return fs.Pwd(), PathError{path: path, cause: err.Error()}
+	}
+
+	defer fd.Close()
+
+	realPath, _ := filepath.Abs(newPath)
+
+	if !strings.HasPrefix(realPath, fs.baseDir) {
+		return fs.currentDirectory, PathError{path: path, cause: "Trying to leave user base directory"}
+	}
+
+	fileInfo, err := fd.Stat()
+
+	if err != nil {
+		return fs.Pwd(), PathError{path: path, cause: fmt.Sprintf("Error getting path information: %v", err)}
+	}
+
+	if !fileInfo.IsDir() {
+		return fs.Pwd(), PathError{path: path, cause: fmt.Sprintf("Path %v is not a directory", virtualPath(realPath, fs))}
+	}
+
+	fs.currentDirectory = newPath
+
+	return fs.Pwd(), nil
+}
+
 func strInfo(info os.FileInfo) string {
 	var typ string
 
@@ -70,4 +105,19 @@ func strInfo(info os.FileInfo) string {
 	}
 
 	return fmt.Sprintf("%v\t%v\t%v", info.Name(), typ, info.Size())
+}
+
+func virtualPath(path string, fs *FS) string {
+	virtualPath := strings.Replace(path, fs.baseDir, "", 1)
+
+	return virtualPath
+}
+
+type PathError struct {
+	path  string
+	cause string
+}
+
+func (p PathError) Error() string {
+	return fmt.Sprintf("Error accesing path: %v. %v", p.path, p.cause)
 }
