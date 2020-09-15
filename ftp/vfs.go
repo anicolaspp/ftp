@@ -32,11 +32,17 @@ func (fs *FS) ForUser(user string) *FS {
 		}
 	}
 
-	return &FS{currentDirectory: userDir, baseDir: fs.baseDir}
+	return &FS{currentDirectory: userDir, baseDir: userDir}
 }
 
 func (fs *FS) Pwd() string {
-	return virtualPath(fs.currentDirectory, fs)
+	path := virtualPath(fs.currentDirectory, fs)
+
+	if path == "" {
+		return "/"
+	}
+
+	return path
 }
 
 func (fs *FS) Ls() []string {
@@ -63,10 +69,39 @@ func (fs *FS) Ls() []string {
 	return result
 }
 
+func (fs *FS) goToRoot() {
+	fs.currentDirectory = fs.baseDir
+}
+
 //Cwd navigates to the given path. The resulting path must be a subtree of the user virtual space.
 // Notice that navigation can only target directories. If the resulting path is a file, an PathError is returned and
 // the current directory is unchanged and returned along the error.
 func (fs *FS) Cwd(path string) (string, error) {
+
+	if path == "/" {
+		fs.goToRoot()
+
+		return fs.Pwd(), nil
+	}
+
+	// try to navigate from root
+	if strings.HasPrefix(path, "/") {
+		pathFromRoot := path[1:]
+
+		current := fs.currentDirectory
+
+		fs.goToRoot()
+		cwd, err := fs.Cwd(pathFromRoot)
+
+		if err != nil {
+			fs.currentDirectory = current
+
+			return fs.Pwd(), PathError{path: path, cause: err.Error()}
+		}
+
+		return cwd, nil
+	}
+
 	newPath := fs.currentDirectory + "/" + path
 
 	fd, err := os.Open(newPath)
