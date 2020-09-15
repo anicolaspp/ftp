@@ -21,7 +21,7 @@ type Command struct {
 }
 
 func ParseCommand(data []byte) Command {
-	return GenParser(data).Eval()
+	return CommandParser(data).Eval()
 }
 
 

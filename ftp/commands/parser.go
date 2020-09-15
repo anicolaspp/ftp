@@ -5,6 +5,6 @@ type Parser interface {
 	next() Parser
 }
 
-func GenParser(data []byte) Parser {
+func CommandParser(data []byte) Parser {
 	return userParser{data: data}
 }
