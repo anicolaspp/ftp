@@ -46,11 +46,19 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 
 		logMsg(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
 
-		connManager.processCommand(buf[0:n])
+		if connManager.processCommand(buf[0:n]) == false {
+			_ = connManager.dataConnection.Close()
+
+			return
+		}
 	}
 }
 
-func (connManager *ConnectionManager) processCommand(cmdData []byte) {
+func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
+	if len(cmdData) == 0 {
+		return false
+	}
+
 	cmd := commands.ParseCommand(cmdData)
 
 	fmt.Println(cmd)
@@ -68,6 +76,7 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) {
 		connManager.echo(cmdData)
 	}
 
+	return true
 }
 
 func (connManager *ConnectionManager) echo(cmdData []byte) {
