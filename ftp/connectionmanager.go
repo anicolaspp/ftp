@@ -3,6 +3,7 @@ package ftp
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/anicolaspp/ftp/ftp/commands"
 	"net"
 	"runtime"
 	"strconv"
@@ -50,7 +51,7 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 }
 
 func (connManager *ConnectionManager) processCommand(cmdData []byte) {
-	cmd := ParseCommand(cmdData)
+	cmd := commands.ParseCommand(cmdData)
 
 	fmt.Println(cmd)
 
@@ -73,9 +74,9 @@ func (connManager *ConnectionManager) echo(cmdData []byte) {
 	connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
 }
 
-func (connManager *ConnectionManager) user(cmd Command) bool {
+func (connManager *ConnectionManager) user(cmd commands.Command) bool {
 
-	if cmd.cmdType == USER {
+	if cmd.CmdType == commands.USER {
 		user := cmd.Args
 
 		connManager.acc.withUser(user)
@@ -93,8 +94,8 @@ func (connManager *ConnectionManager) user(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) pass(cmd Command) bool {
-	if cmd.cmdType == PASS {
+func (connManager *ConnectionManager) pass(cmd commands.Command) bool {
+	if cmd.CmdType == commands.PASS {
 		pass := cmd.Args
 
 		if connManager.acc.validatePassword(pass) {
@@ -113,8 +114,8 @@ func (connManager *ConnectionManager) pass(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) syst(cmd Command) bool {
-	if cmd.cmdType == SYST {
+func (connManager *ConnectionManager) syst(cmd commands.Command) bool {
+	if cmd.CmdType == commands.SYST {
 		sysName := runtime.GOOS
 
 		response := fmt.Sprintf("215 TYPE: %v\n", sysName)
@@ -127,8 +128,8 @@ func (connManager *ConnectionManager) syst(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) pwd(cmd Command) bool {
-	if cmd.cmdType == PWD {
+func (connManager *ConnectionManager) pwd(cmd commands.Command) bool {
+	if cmd.CmdType == commands.PWD {
 		response := fmt.Sprintf("257 %v\n", connManager.fs.Pwd())
 
 		connManager.sendStr(response)
@@ -139,8 +140,8 @@ func (connManager *ConnectionManager) pwd(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) cwd(cmd Command) bool {
-	if cmd.cmdType == CWD {
+func (connManager *ConnectionManager) cwd(cmd commands.Command) bool {
+	if cmd.CmdType == commands.CWD {
 		path := cmd.Args
 
 		currentPath, err := connManager.fs.Cwd(path)
@@ -161,8 +162,8 @@ func (connManager *ConnectionManager) cwd(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) list(cmd Command) bool {
-	if cmd.cmdType == LIST {
+func (connManager *ConnectionManager) list(cmd commands.Command) bool {
+	if cmd.CmdType == commands.LIST {
 
 		connManager.sendStr("150 Listing Directory Content\n")
 
@@ -181,8 +182,8 @@ func (connManager *ConnectionManager) list(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) eprt(cmd Command) bool {
-	if cmd.cmdType == EPRT {
+func (connManager *ConnectionManager) eprt(cmd commands.Command) bool {
+	if cmd.CmdType == commands.EPRT {
 		args := strings.Split(strings.Trim(cmd.Args, "\r\n"), "|")
 
 		port, _ := strconv.Atoi(args[3])
@@ -198,8 +199,8 @@ func (connManager *ConnectionManager) eprt(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) lprt(cmd Command) bool {
-	if cmd.cmdType == LPRT {
+func (connManager *ConnectionManager) lprt(cmd commands.Command) bool {
+	if cmd.CmdType == commands.LPRT {
 
 		args := strings.Split(strings.Trim(cmd.Args, "\r\n"), ",")
 
@@ -252,8 +253,8 @@ func (connManager *ConnectionManager) lprt(cmd Command) bool {
 	return false
 }
 
-func (connManager *ConnectionManager) typ(cmd Command) bool {
-	if cmd.cmdType == TYPE {
+func (connManager *ConnectionManager) typ(cmd commands.Command) bool {
+	if cmd.CmdType == commands.TYPE {
 		response := "200\n"
 
 		connManager.sendStr(response)
