@@ -12,6 +12,7 @@ const (
 	TYPE    CommandType = 6
 	EPRT    CommandType = 7
 	LPRT    CommandType = 8
+	QUIT	CommandType = 9
 	UNKNOWN             = 500
 )
 

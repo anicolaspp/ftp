@@ -61,6 +61,10 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 
 	cmd := commands.ParseCommand(cmdData)
 
+	if cmd.CmdType == commands.QUIT {
+		return false
+	}
+
 	fmt.Println(cmd)
 
 	if !connManager.user(cmd) &&
@@ -82,6 +86,8 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 func (connManager *ConnectionManager) echo(cmdData []byte) {
 	connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
 }
+
+
 
 func (connManager *ConnectionManager) user(cmd commands.Command) bool {
 
