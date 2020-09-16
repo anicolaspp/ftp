@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/anicolaspp/ftp/ftp/commands"
+	"log"
 	"net"
 	"runtime"
 	"strconv"
@@ -38,13 +39,13 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 		n, err := conn.Read(buf[0:])
 
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			return
 		}
 
 		cmd := string(buf[0:n])
 
-		logMsg(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
+		log.Println(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
 
 		if connManager.processCommand(buf[0:n]) == false {
 			_ = connManager.dataConnection.Close()
@@ -64,8 +65,6 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 	if cmd.CmdType == commands.QUIT {
 		return false
 	}
-
-	fmt.Println(cmd)
 
 	if !connManager.user(cmd) &&
 		!connManager.pass(cmd) &&
@@ -98,7 +97,7 @@ func (connManager *ConnectionManager) user(cmd commands.Command) bool {
 
 		// override the base virtual space with user specific virtual space
 		connManager.fs = connManager.fs.ForUser(user)
-		logMsg(user)
+		log.Println(user)
 
 		response := "331 Need pass\n"
 		connManager.sendStr(response)
@@ -229,9 +228,6 @@ func (connManager *ConnectionManager) lprt(cmd commands.Command) bool {
 			add[i] = byte(v)
 		}
 
-		fmt.Println(addSize)
-		fmt.Println(add)
-
 		portSize, _ := strconv.Atoi(args[2+addSize])
 
 		port := make([]byte, portSize)
@@ -251,9 +247,6 @@ func (connManager *ConnectionManager) lprt(cmd commands.Command) bool {
 		portLong := binary.BigEndian.Uint64(port)
 
 		var ip net.IP = add
-
-		fmt.Println(ip)
-		fmt.Println(portLong)
 
 		if connected := connManager.openDataConnection(ip, int64(portLong)); connected {
 			response := "200 Get Port\n"
@@ -282,7 +275,7 @@ func (connManager *ConnectionManager) typ(cmd commands.Command) bool {
 
 func (connManager *ConnectionManager) sendStr(msg string) {
 
-	logMsg(fmt.Sprintf("[SERVER]: %v\n", msg))
+	log.Println(fmt.Sprintf("[SERVER]: %v", msg))
 
 	connManager.ctlConnection.Write([]byte(msg))
 }
@@ -291,22 +284,18 @@ func (connManager *ConnectionManager) openDataConnection(ip net.IP, port int64) 
 
 	address := fmt.Sprintf("%v:%v", "localhost", port)
 
-	logMsg(fmt.Sprintf("[SERVER]: Connecting to %v\n", address))
+	log.Println(fmt.Sprintf("[SERVER]: Connecting to %v", address))
 
-	dataConn, error := net.Dial("tcp", address)
+	dataConn, err := net.Dial("tcp", address)
 
-	if error != nil {
-		fmt.Printf("Error opening data connection: %v", error)
+	if err != nil {
+		log.Println(fmt.Sprintf("Error opening data connection: %v", err))
 		return false
 	}
 
-	logMsg(fmt.Sprintf("Data connection opened at %v\n", address))
+	log.Println(fmt.Sprintf("Data connection opened at %v", address))
 
 	connManager.dataConnection = dataConn
 
 	return true
-}
-
-func logMsg(value interface{}) {
-	fmt.Print(value)
 }

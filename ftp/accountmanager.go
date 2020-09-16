@@ -2,6 +2,7 @@ package ftp
 
 import (
 	"fmt"
+	"log"
 )
 
 type accountManager struct {
@@ -17,13 +18,13 @@ func newAccountManager() *accountManager {
 
 func (acc *accountManager) withUser(user string) {
 	acc.user = user
-	logMsg(fmt.Sprintf("[SERVER]: ACC MANAGER SET USER %v\n", user))
+	log.Println(fmt.Sprintf("[SERVER]: ACC MANAGER SET USER %v", user))
 }
 
 func (acc *accountManager) withPass(pass string) {
 	acc.pass = pass
 
-	logMsg(fmt.Sprintf("[SERVER]: ACC MANAGER SET PASS %v\n", "******"))
+	log.Println(fmt.Sprintf("[SERVER]: ACC MANAGER SET PASS %v", "******"))
 }
 
 func (acc *accountManager) validatePassword(pass string) bool {
@@ -33,7 +34,7 @@ func (acc *accountManager) validatePassword(pass string) bool {
 		return true
 	}
 
-	logMsg("[SERVER]: PASS CMD user:password validation error\n")
+	log.Println("[SERVER]: PASS CMD user:password validation error")
 
 	return false
 }
