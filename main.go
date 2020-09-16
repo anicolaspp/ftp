@@ -13,7 +13,7 @@ func main() {
 
 	checkError(err)
 
-	fmt.Println("Server running at port 21...")
+	log.Println("Server running at port 21...")
 
 	defer listener.Close()
 
