@@ -48,7 +48,9 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 		log.Println(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
 
 		if connManager.processCommand(buf[0:n]) == false {
-			_ = connManager.dataConnection.Close()
+			if connManager.dataConnection != nil {
+				_ = connManager.dataConnection.Close()
+			}
 
 			return
 		}
