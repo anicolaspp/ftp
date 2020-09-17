@@ -24,6 +24,8 @@ func NewConnectionManager(baseDir string) *ConnectionManager {
 	return &ConnectionManager{acc: newAccountManager(), fs: NewFS(baseDir)}
 }
 
+//Handle processes the commands coming from this particular net.Conn.
+// The processing happens within a loop until the connection receives a commands.QUIT commands.Command
 func (connManager *ConnectionManager) Handle(conn net.Conn) {
 	connManager.ctlConnection = conn
 
@@ -78,7 +80,8 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 		!connManager.eprt(cmd) &&
 		!connManager.list(cmd) &&
 		!connManager.cwd(cmd) &&
-		!connManager.stor(cmd) {
+		!connManager.stor(cmd) &&
+		!connManager.retr(cmd) {
 
 		connManager.echo(cmdData)
 	}
@@ -284,7 +287,7 @@ func (connManager *ConnectionManager) stor(cmd commands.Command) bool {
 
 		nameSegments := strings.Split(cmd.Args, "/")
 
-		name := nameSegments[len(nameSegments) - 1]
+		name := nameSegments[len(nameSegments)-1]
 
 		go connManager.fs.WriteTo(name, pipe)
 
@@ -304,6 +307,40 @@ func (connManager *ConnectionManager) stor(cmd commands.Command) bool {
 		}
 
 		connManager.sendStr("226 Transfer completed\r\n")
+
+		return true
+	}
+
+	return false
+}
+
+func (connManager *ConnectionManager) retr(cmd commands.Command) bool {
+	if cmd.CmdType == commands.RETR {
+		connManager.sendStr("150 Opening Transmission Stream\r\n")
+
+		defer connManager.dataConnection.Close()
+
+		pipe := make(chan Transmission)
+		defer close(pipe)
+
+		// function that receives data from the file system and pushes it into the data connection.
+		receiving := func() {
+			for transmitted := range pipe {
+				size := transmitted.size
+
+				connManager.dataConnection.Write(transmitted.data[0:size])
+			}
+		}
+
+		go receiving()
+
+		err := connManager.fs.ReadFrom(cmd.Args, pipe)
+
+		if err != nil {
+			connManager.sendStr(fmt.Sprintf("451 %v\r\n", err))
+		} else {
+			connManager.sendStr("226 File transmission completed\r\n")
+		}
 
 		return true
 	}
