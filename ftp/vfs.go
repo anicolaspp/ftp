@@ -2,6 +2,7 @@ package ftp
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"path/filepath"
@@ -143,16 +144,22 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
 
 	filePath := fs.currentDirectory + "/" + fileName
 
+	log.Println(fmt.Sprintf("Trying to write on file %v", virtualPath(filePath, fs)))
+
 	info, exists := fileExists(filePath)
 
 	if exists {
 		if info.IsDir() {
+			log.Println(fmt.Sprintf("%v is a directory. Cannot write on directories.", virtualPath(filePath, fs)))
+
 			return PathError{path: virtualPath(filePath, fs), cause: fmt.Sprintf("Given file name %v is a directory.", fileName)}
 		}
 
 		err := os.Remove(filePath)
 
 		if err != nil {
+			log.Println(fmt.Sprintf("Cannot delete file %v", virtualPath(filePath, fs)))
+
 			return PathError{path: fileName, cause: err.Error()}
 		}
 	}
@@ -174,6 +181,8 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
 			return PathError{path: virtualPath(filePath, fs), cause: err.Error()}
 		}
 	}
+
+	log.Println(fmt.Sprintf("Write completed for file %v", virtualPath(filePath, fs)))
 
 	return nil
 }
