@@ -188,6 +188,41 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
 	return nil
 }
 
+//ReadFrom reads from the name and transmits the file content into the channel
+func (fs *FS) ReadFrom(fileName string, to chan <- Transmission) error {
+	filePath := fs.currentDirectory + "/" + fileName
+
+	info, exists := fileExists(filePath)
+
+	if !exists{
+		return PathError{path: virtualPath(filePath, fs), cause: "File not found"}
+	}
+
+	if info.IsDir() {
+		return PathError{path: virtualPath(filePath, fs), cause: "Referenced path is not a file, but a directory"}
+	}
+
+	fd, err := os.Open(filePath)
+
+	if err != nil {
+		return PathError{path: fileName, cause: err.Error()}
+	}
+
+	defer fd.Close()
+
+	buffer := make([]byte, 1024)
+
+	for {
+		read, _ := fd.Read(buffer)
+
+		if read <= 0 {
+			return nil
+		}
+
+		to <- Transmission{data: buffer, size: read}
+	}
+}
+
 func strInfo(info os.FileInfo) string {
 	var typ string
 

@@ -70,6 +70,7 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 
 	if !connManager.user(cmd) &&
 		!connManager.pass(cmd) &&
+		connManager.canRunCommand() &&
 		!connManager.pwd(cmd) &&
 		!connManager.syst(cmd) &&
 		!connManager.lprt(cmd) &&
@@ -333,6 +334,17 @@ func (connManager *ConnectionManager) openDataConnection(ip net.IP, port int64) 
 	log.Println(fmt.Sprintf("Data connection opened at %v", address))
 
 	connManager.dataConnection = dataConn
+
+	return true
+}
+
+//canRunCommand verify that the correct account is set up.
+func (connManager *ConnectionManager) canRunCommand() bool {
+	if !connManager.acc.isValidAccount() {
+		connManager.sendStr("530 Need Auth\r\n")
+
+		return false
+	}
 
 	return true
 }

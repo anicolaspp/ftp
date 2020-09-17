@@ -17,5 +17,6 @@ func (s storParser) Eval() Command {
 }
 
 func (s storParser) next() Parser {
-	return quitParser{data: s.data}
+	return retrParser{data: s.data}
 }
+

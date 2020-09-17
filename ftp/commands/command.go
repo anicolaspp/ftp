@@ -14,6 +14,7 @@ const (
 	LPRT    CommandType = 8
 	QUIT	CommandType = 9
 	STOR	CommandType = 10
+	RETR	CommandType = 11
 	UNKNOWN             = 500
 )
 
