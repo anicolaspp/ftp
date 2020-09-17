@@ -137,6 +137,7 @@ func (fs *FS) Cwd(path string) (string, error) {
 //WriteTo writes the stream of data being received on the data channel to the file referenced by fileName.
 //
 // Returns nil if everything happens correctly
+// Channel Close signal is expected
 // If the file exists it is truncated.
 // If the file is a directory, PathError is returned
 // Failure operations on the file are reported using PathError
