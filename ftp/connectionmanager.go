@@ -76,7 +76,8 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 		!connManager.typ(cmd) &&
 		!connManager.eprt(cmd) &&
 		!connManager.list(cmd) &&
-		!connManager.cwd(cmd) {
+		!connManager.cwd(cmd) &&
+		!connManager.stor(cmd) {
 
 		connManager.echo(cmdData)
 	}
@@ -87,8 +88,6 @@ func (connManager *ConnectionManager) processCommand(cmdData []byte) bool {
 func (connManager *ConnectionManager) echo(cmdData []byte) {
 	connManager.sendStr(fmt.Sprintf("%v\n", string(cmdData)))
 }
-
-
 
 func (connManager *ConnectionManager) user(cmd commands.Command) bool {
 
@@ -268,6 +267,42 @@ func (connManager *ConnectionManager) typ(cmd commands.Command) bool {
 		response := "200\n"
 
 		connManager.sendStr(response)
+
+		return true
+	}
+
+	return false
+}
+
+func (connManager *ConnectionManager) stor(cmd commands.Command) bool {
+	if cmd.CmdType == commands.STOR {
+		connManager.sendStr("150 About to start receiving data\r\n")
+		defer connManager.dataConnection.Close()
+
+		pipe := make(chan Transmission)
+
+		nameSegments := strings.Split(cmd.Args, "/")
+
+		name := nameSegments[len(nameSegments) - 1]
+
+		go connManager.fs.WriteTo(name, pipe)
+
+		buffer := make([]byte, 255)
+
+		for {
+			read, _ := connManager.dataConnection.Read(buffer)
+
+			toTransmit := Transmission{size: read, data: buffer}
+
+			if read <= 0 {
+				close(pipe)
+				break
+			}
+
+			pipe <- toTransmit
+		}
+
+		connManager.sendStr("226 Transfer completed\r\n")
 
 		return true
 	}

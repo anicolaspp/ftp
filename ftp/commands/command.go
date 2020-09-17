@@ -13,6 +13,7 @@ const (
 	EPRT    CommandType = 7
 	LPRT    CommandType = 8
 	QUIT	CommandType = 9
+	STOR	CommandType = 10
 	UNKNOWN             = 500
 )
 

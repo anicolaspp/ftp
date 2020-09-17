@@ -19,7 +19,7 @@ func (t typeParser) Eval() Command {
 }
 
 func (t typeParser) next() Parser {
-	return quitParser{data: t.data}
+	return storParser{data: t.data}
 }
 
 func typeCommand() Command {

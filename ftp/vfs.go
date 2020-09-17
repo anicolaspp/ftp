@@ -133,6 +133,51 @@ func (fs *FS) Cwd(path string) (string, error) {
 	return fs.Pwd(), nil
 }
 
+//WriteTo writes the stream of data being received on the data channel to the file referenced by fileName.
+//
+// Returns nil if everything happens correctly
+// If the file exists it is truncated.
+// If the file is a directory, PathError is returned
+// Failure operations on the file are reported using PathError
+func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
+
+	filePath := fs.currentDirectory + "/" + fileName
+
+	info, exists := fileExists(filePath)
+
+	if exists {
+		if info.IsDir() {
+			return PathError{path: virtualPath(filePath, fs), cause: fmt.Sprintf("Given file name %v is a directory.", fileName)}
+		}
+
+		err := os.Remove(filePath)
+
+		if err != nil {
+			return PathError{path: fileName, cause: err.Error()}
+		}
+	}
+
+	fd, err := os.Create(filePath)
+
+	if err != nil {
+		return PathError{path: fileName, cause: err.Error()}
+	}
+
+	defer fd.Close()
+
+	for transmitted := range data {
+		size := transmitted.size
+
+		_, err := fd.Write(transmitted.data[0:size])
+
+		if err != nil {
+			return PathError{path: virtualPath(filePath, fs), cause: err.Error()}
+		}
+	}
+
+	return nil
+}
+
 func strInfo(info os.FileInfo) string {
 	var typ string
 
@@ -158,4 +203,19 @@ type PathError struct {
 
 func (p PathError) Error() string {
 	return fmt.Sprintf("Error accesing path: %v. %v", p.path, p.cause)
+}
+
+func fileExists(filename string) (os.FileInfo, bool) {
+	info, err := os.Stat(filename)
+
+	if os.IsNotExist(err) {
+		return nil, false
+	}
+
+	return info, true
+}
+
+type Transmission struct {
+	size int
+	data []byte
 }
