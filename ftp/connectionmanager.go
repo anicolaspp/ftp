@@ -287,7 +287,7 @@ func (connManager *ConnectionManager) stor(cmd commands.Command) bool {
 
 		go connManager.fs.WriteTo(name, pipe)
 
-		buffer := make([]byte, 255)
+		buffer := make([]byte, 1024)
 
 		for {
 			read, _ := connManager.dataConnection.Read(buffer)
