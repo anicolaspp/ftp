@@ -289,7 +289,14 @@ func (connManager *ConnectionManager) stor(cmd commands.Command) bool {
 
 		name := nameSegments[len(nameSegments)-1]
 
-		go connManager.fs.WriteTo(name, pipe)
+		// function to send data to the file system
+		sending := func() {
+			written, _ := connManager.fs.WriteTo(name, pipe)
+
+			log.Printf("Bytes written %v\n", written)
+		}
+
+		go sending()
 
 		buffer := make([]byte, 1024)
 
@@ -334,7 +341,9 @@ func (connManager *ConnectionManager) retr(cmd commands.Command) bool {
 
 		go receiving()
 
-		err := connManager.fs.ReadFrom(cmd.Args, pipe)
+		read, err := connManager.fs.ReadFrom(cmd.Args, pipe)
+
+		log.Printf("%v ytes successfully read\n", read)
 
 		if err != nil {
 			connManager.sendStr(fmt.Sprintf("451 %v\r\n", err))

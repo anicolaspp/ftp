@@ -136,12 +136,12 @@ func (fs *FS) Cwd(path string) (string, error) {
 
 //WriteTo writes the stream of data being received on the data channel to the file referenced by fileName.
 //
-// Returns nil if everything happens correctly
+// Returns the total number of bytes written along with any error (or nil if everything happens correctly)
 // Channel Close signal is expected
 // If the file exists it is truncated.
 // If the file is a directory, PathError is returned
 // Failure operations on the file are reported using PathError
-func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
+func (fs *FS) WriteTo(fileName string, data <-chan Transmission) (int, error) {
 
 	filePath := fs.currentDirectory + "/" + fileName
 
@@ -153,7 +153,7 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
 		if info.IsDir() {
 			log.Println(fmt.Sprintf("%v is a directory. Cannot write on directories.", virtualPath(filePath, fs)))
 
-			return PathError{path: virtualPath(filePath, fs), cause: fmt.Sprintf("Given file name %v is a directory.", fileName)}
+			return 0, PathError{path: virtualPath(filePath, fs), cause: fmt.Sprintf("Given file name %v is a directory.", fileName)}
 		}
 
 		err := os.Remove(filePath)
@@ -161,62 +161,69 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) error {
 		if err != nil {
 			log.Println(fmt.Sprintf("Cannot delete file %v", virtualPath(filePath, fs)))
 
-			return PathError{path: fileName, cause: err.Error()}
+			return 0, PathError{path: fileName, cause: err.Error()}
 		}
 	}
 
 	fd, err := os.Create(filePath)
 
 	if err != nil {
-		return PathError{path: fileName, cause: err.Error()}
+		return 0, PathError{path: fileName, cause: err.Error()}
 	}
 
 	defer fd.Close()
 
+	totalWritten := 0
+
 	for transmitted := range data {
 		size := transmitted.size
 
-		_, err := fd.Write(transmitted.data[0:size])
+		s, err := fd.Write(transmitted.data[0:size])
+
+		totalWritten += s
 
 		if err != nil {
-			return PathError{path: virtualPath(filePath, fs), cause: err.Error()}
+			return totalWritten, PathError{path: virtualPath(filePath, fs), cause: err.Error()}
 		}
 	}
 
 	log.Println(fmt.Sprintf("Write completed for file %v", virtualPath(filePath, fs)))
 
-	return nil
+	return totalWritten, nil
 }
 
 //ReadFrom reads from the name and transmits the file content into the channel
-func (fs *FS) ReadFrom(fileName string, to chan <- Transmission) error {
+func (fs *FS) ReadFrom(fileName string, to chan<- Transmission) (int, error) {
 	filePath := fs.currentDirectory + "/" + fileName
 
 	info, exists := fileExists(filePath)
 
-	if !exists{
-		return PathError{path: virtualPath(filePath, fs), cause: "File not found"}
+	if !exists {
+		return 0, PathError{path: virtualPath(filePath, fs), cause: "File not found"}
 	}
 
 	if info.IsDir() {
-		return PathError{path: virtualPath(filePath, fs), cause: "Referenced path is not a file, but a directory"}
+		return 0, PathError{path: virtualPath(filePath, fs), cause: "Referenced path is not a file, but a directory"}
 	}
 
 	fd, err := os.Open(filePath)
 
 	if err != nil {
-		return PathError{path: fileName, cause: err.Error()}
+		return 0, PathError{path: fileName, cause: err.Error()}
 	}
 
 	defer fd.Close()
+
+	totalRead := 0
 
 	buffer := make([]byte, 1024)
 
 	for {
 		read, _ := fd.Read(buffer)
+		totalRead += read
 
 		if read <= 0 {
-			return nil
+			return totalRead, nil
 		}
 
 		to <- Transmission{data: buffer, size: read}
