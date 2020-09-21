@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/anicolaspp/ftp/ftp"
 	"log"
 	"net"
@@ -29,6 +28,6 @@ func main() {
 
 func checkError(err error) {
 	if err != nil {
-		log.Fatalln(fmt.Sprintf("Fatal error: %s", err.Error()))
+		log.Fatalf("Fatal error: %s", err.Error())
 	}
 }
