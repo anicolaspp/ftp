@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strings"
 	"path/filepath"
+	"strings"
 )
 
 //FS is a virtual file system
