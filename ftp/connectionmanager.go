@@ -47,7 +47,7 @@ func (connManager *ConnectionManager) Handle(conn net.Conn) {
 
 		cmd := string(buf[0:n])
 
-		log.Println(fmt.Sprintf("[CLIENT CMD]: %v\n", cmd))
+		log.Printf("[CLIENT CMD]: %v\n", cmd)
 
 		if connManager.processCommand(buf[0:n]) == false {
 			if connManager.dataConnection != nil {
@@ -102,7 +102,6 @@ func (connManager *ConnectionManager) user(cmd commands.Command) bool {
 
 		// override the base virtual space with user specific virtual space
 		connManager.fs = connManager.fs.ForUser(user)
-		log.Println(user)
 
 		response := "331 Need pass\n"
 		connManager.sendStr(response)

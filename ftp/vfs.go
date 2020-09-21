@@ -145,13 +145,13 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) (int, error) {
 
 	filePath := fs.currentDirectory + "/" + fileName
 
-	log.Println(fmt.Sprintf("Trying to write on file %v", virtualPath(filePath, fs)))
+	log.Printf("Trying to write on file %v", virtualPath(filePath, fs))
 
 	info, exists := fileExists(filePath)
 
 	if exists {
 		if info.IsDir() {
-			log.Println(fmt.Sprintf("%v is a directory. Cannot write on directories.", virtualPath(filePath, fs)))
+			log.Printf("%v is a directory. Cannot write on directories.", virtualPath(filePath, fs))
 
 			return 0, PathError{path: virtualPath(filePath, fs), cause: fmt.Sprintf("Given file name %v is a directory.", fileName)}
 		}
@@ -159,7 +159,7 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) (int, error) {
 		err := os.Remove(filePath)
 
 		if err != nil {
-			log.Println(fmt.Sprintf("Cannot delete file %v", virtualPath(filePath, fs)))
+			log.Printf("Cannot delete file %v", virtualPath(filePath, fs))
 
 			return 0, PathError{path: fileName, cause: err.Error()}
 		}
@@ -187,12 +187,13 @@ func (fs *FS) WriteTo(fileName string, data <-chan Transmission) (int, error) {
 		}
 	}
 
-	log.Println(fmt.Sprintf("Write completed for file %v", virtualPath(filePath, fs)))
+	log.Printf("Write completed for file %v", virtualPath(filePath, fs))
 
 	return totalWritten, nil
 }
 
-//ReadFrom reads from the name and transmits the file content into the channel
+//ReadFrom reads from the file name and transmits the file content into the channel
+// Returns the total number of byte read along with any error that occurs.
 func (fs *FS) ReadFrom(fileName string, to chan<- Transmission) (int, error) {
 	filePath := fs.currentDirectory + "/" + fileName
 
